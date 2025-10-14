@@ -1,0 +1,18 @@
+LangChain es un framework de código abierto diseñado para simplificar el desarrollo de aplicaciones que utilizan grandes modelos de lenguaje (LLM).
+LangChain proporciona abstracciones para trabajar con indicaciones, cadenas, memoria y agentes, lo que facilita la creación de sistemas complejos basados ​​en LLM.
+El framework admite la integración con diversas bases de datos vectoriales como FAISS y Chroma para la recuperación semántica.
+LangChain habilita la Generación Aumentada por Recuperación (RAG), permitiendo a los desarrolladores obtener el contexto relevante antes de generar respuestas.
+La memoria en LangChain ayuda a los modelos a retener interacciones previas, lo que aumenta la coherencia de las conversaciones multi-turno.
+Los agentes en LangChain pueden usar herramientas como calculadoras, API de búsqueda o funciones personalizadas según las instrucciones que reciben.
+BM25 y la recuperación basada en vectores se pueden combinar en LangChain para admitir estrategias de recuperación híbridas.
+FAISS es una biblioteca de alto rendimiento para la búsqueda por similitud que LangChain aprovecha para una recuperación eficiente en pipelines RAG. Chroma es un almacén vectorial ligero que se utiliza a menudo en LangChain para el almacenamiento y la recuperación de documentos mediante incrustación.
+Las plantillas de indicaciones de LangChain admiten el formato estilo Jinja y la inyección de variables para personalizar las entradas del modelo.
+La cadena "stuff" envía todo el contexto a la vez al LLM, lo que resulta útil para documentos cortos en RAG.
+La cadena "map-reduce" fragmenta documentos grandes, los procesa por separado y luego agrega los resultados.
+La cadena "refine" actualiza iterativamente una respuesta incorporando cada nuevo fragmento de información.
+LangChain permite que los LLM actúen como agentes que deciden a qué herramienta llamar y en qué orden durante una tarea.
+LangChain admite memoria conversacional mediante ConversationBufferMemory y memoria de resumen mediante ConversationSummaryMemory.
+Los agentes de LangChain pueden interactuar con API y bases de datos externas, lo que mejora las capacidades de las aplicaciones basadas en LLM. Las canalizaciones RAG en LangChain implican la carga, división, incrustación, recuperación y generación de respuestas basadas en LLM (relevancia marginal máxima) de documentos.
+La recuperación de MMR (relevancia marginal máxima) en LangChain mejora la diversidad al equilibrar la relevancia y la redundancia.
+El uso de herramientas en LangChain permite a los agentes ejecutar funciones predefinidas de Python con la información contextual del usuario.
+LangChain permite la reclasificación de los resultados recuperados mediante LLM o codificadores cruzados neuronales para mejorar la calidad del contexto.

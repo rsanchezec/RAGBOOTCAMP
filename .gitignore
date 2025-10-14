@@ -1,0 +1,87 @@
+# Python-generated files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+wheels/
+*.egg-info
+*.egg
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Python version files
+.python-version
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Vector databases and indexes
+chroma_db/
+**/chroma_db/
+*.sqlite3
+*.db
+faiss_index/
+**/faiss_index/
+*.index
+*.faiss
+
+# LangSmith and API logs
+.langsmith/
+langsmith_traces/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# Operating system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+
+# Model downloads and cache
+models/
+*.bin
+sentence-transformers/
+huggingface_cache/
+.cache/
+
+# Large data files (uncomment if needed)
+# *.pdf
+# *.csv
+# *.xlsx
+# **/data/

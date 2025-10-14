@@ -1,0 +1,11 @@
+
+    Aprendizaje Profundo y Redes Neuronales
+
+    El aprendizaje profundo es un subconjunto del aprendizaje automático basado en redes 
+    neuronales artificiales. Estas redes están inspiradas en el cerebro humano y consisten 
+    en capas de nodos interconectados. El aprendizaje profundo ha revolucionado campos 
+    como la visión por computadora, el procesamiento de lenguaje natural y el reconocimiento 
+    de voz. Las Redes Neuronales Convolucionales (CNN) son particularmente efectivas para 
+    el procesamiento de imágenes, mientras que las Redes Neuronales Recurrentes (RNN) y 
+    los Transformers destacan en el procesamiento de datos secuenciales.
+    

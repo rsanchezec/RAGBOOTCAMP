@@ -1,0 +1,10 @@
+
+    Procesamiento de Lenguaje Natural (PLN)
+
+    El PLN es un campo de la IA que se enfoca en la interacción entre computadoras y 
+    lenguaje humano. Las tareas clave en PLN incluyen clasificación de texto, 
+    reconocimiento de entidades nombradas, análisis de sentimientos, traducción automática 
+    y respuesta a preguntas. El PLN moderno depende en gran medida de arquitecturas 
+    transformer como BERT, GPT y T5. Estos modelos utilizan mecanismos de atención para 
+    entender el contexto y las relaciones entre palabras en el texto.
+    

@@ -1,0 +1,12 @@
+
+    Fundamentos del Aprendizaje Automático (Machine Learning)
+
+    El aprendizaje automático es un subconjunto de la inteligencia artificial que permite 
+    a los sistemas aprender y mejorar a partir de la experiencia sin ser programados 
+    explícitamente. Hay tres tipos principales de aprendizaje automático: aprendizaje 
+    supervisado, aprendizaje no supervisado y aprendizaje por refuerzo. El aprendizaje 
+    supervisado utiliza datos etiquetados para entrenar modelos, mientras que el 
+    aprendizaje no supervisado encuentra patrones en datos no etiquetados. El aprendizaje 
+    por refuerzo aprende a través de la interacción con un entorno utilizando recompensas 
+    y penalizaciones.
+    
