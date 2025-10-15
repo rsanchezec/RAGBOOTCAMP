@@ -24,6 +24,7 @@
 [RAG Adaptativo](#-rag-adaptativo-adaptive-rag) •
 [RAG Memory](#-rag-con-memoria-persistente) •
 [Cache RAG](#️-cache-augmented-generation-cag) •
+[Evaluación RAG](#-evaluación-de-sistemas-rag) •
 [Estructura](#-estructura-del-proyecto) •
 [Uso](#-guía-de-uso)
 
@@ -62,6 +63,7 @@ Este proyecto es ideal para:
 - 🎯 **RAG Adaptativo (Adaptive RAG)**: Enrutamiento inteligente, detección de alucinaciones y auto-corrección con ciclos de retroalimentación
 - 💾 **RAG con Memoria Persistente**: Implementación de memoria conversacional con LangGraph y MemorySaver para mantener contexto entre interacciones
 - ⚡ **Cache-Augmented Generation (CAG)**: Sistema de caché semántico avanzado con FAISS para reutilizar respuestas y optimizar costos
+- 📊 **Evaluación de Sistemas RAG**: Framework completo de evaluación con LangSmith, métricas LLM-as-judge y comparación de experimentos
 - 📊 **Ejemplos Prácticos**: Notebooks interactivos con casos de uso reales
 - 🌍 **Documentación en Español**: Código y comentarios completamente traducidos
 
@@ -4320,6 +4322,431 @@ if state["cache_hit"]:
 
 ---
 
+## 📊 Evaluación de Sistemas RAG
+
+La **evaluación de sistemas RAG** es crucial para medir y mejorar el rendimiento de tus aplicaciones. Este módulo te enseña cómo evaluar sistemáticamente tu sistema RAG usando **LangSmith** y técnicas de **LLM-as-judge** para obtener métricas objetivas sobre la calidad de tus respuestas y recuperaciones.
+
+### 🎯 ¿Por Qué Evaluar RAG?
+
+Un sistema RAG puede **parecer** que funciona bien en pruebas manuales, pero sin evaluación sistemática no sabes:
+- ❓ **¿Qué tan preciso es?** → ¿Las respuestas son factualmente correctas?
+- ❓ **¿Recupera bien?** → ¿Los documentos son relevantes para la pregunta?
+- ❓ **¿Alucina?** → ¿Inventa información no presente en los documentos?
+- ❓ **¿Es relevante?** → ¿Responde realmente a lo que pregunta el usuario?
+
+**Sin evaluación** = Estás volando a ciegas 🙈
+
+### 🔄 Flujo de Evaluación RAG
+
+```
+1. CREAR DATASET
+   ↓
+   [Pregunta 1, Respuesta Esperada 1]
+   [Pregunta 2, Respuesta Esperada 2]
+   [Pregunta 3, Respuesta Esperada 3]
+   ↓
+2. EJECUTAR RAG
+   ↓
+   Sistema RAG procesa cada pregunta
+   ↓
+3. EVALUAR RESPUESTAS
+   ↓
+   [Evaluador 1: Corrección]
+   [Evaluador 2: Relevancia]
+   [Evaluador 3: Fundamentación]
+   [Evaluador 4: Relevancia de Recuperación]
+   ↓
+4. ANALIZAR RESULTADOS
+   ↓
+   Métricas agregadas y visualización en LangSmith
+```
+
+### 📊 Tipos de Evaluación
+
+#### 1️⃣ **Evaluación de Chatbots (Sin RAG)**
+
+Antes de evaluar RAG, es útil entender cómo evaluar chatbots simples:
+
+**Métricas:**
+- **Corrección**: ¿La respuesta es correcta vs una respuesta de referencia?
+- **Concisión**: ¿La respuesta es concisa o verbosa?
+
+**Ejemplo:**
+```python
+from langsmith import Client
+
+client = Client()
+
+# Crear dataset de prueba
+dataset = client.create_dataset("Chatbots Evaluation")
+client.create_examples(
+    dataset_id=dataset.id,
+    examples=[
+        {
+            "inputs": {"question": "What is LangChain?"},
+            "outputs": {"answer": "A framework for building LLM applications"},
+        },
+        # ... más ejemplos
+    ]
+)
+
+# Definir evaluador
+def correctness(inputs, outputs, reference_outputs):
+    # LLM evalúa si la respuesta es correcta
+    return llm_judge(inputs, outputs, reference_outputs)
+
+# Ejecutar evaluación
+results = client.evaluate(
+    target_function,
+    data=dataset_name,
+    evaluators=[correctness, concision]
+)
+```
+
+#### 2️⃣ **Evaluación de Sistemas RAG (Completa)**
+
+Los sistemas RAG requieren **4 métricas clave** para evaluación completa:
+
+---
+
+##### 📌 **Métrica 1: Corrección (Correctness)**
+
+**¿Qué mide?**: Compara la respuesta generada vs una respuesta de referencia (ground truth)
+
+**Requiere**: Dataset con respuestas esperadas
+
+**Cuándo usar:**
+```python
+✅ Tienes respuestas de referencia preparadas
+✅ Necesitas medir precisión factual
+✅ Comparas diferentes modelos o configuraciones
+❌ No tienes ground truth disponible
+```
+
+**Ejemplo de prompt para LLM-as-judge:**
+```python
+"""You are a teacher grading a quiz.
+
+You will be given a QUESTION, the GROUND TRUTH (correct) ANSWER,
+and the STUDENT ANSWER.
+
+Grade criteria:
+(1) Grade based ONLY on factual accuracy relative to ground truth
+(2) Ensure no conflicting statements
+(3) OK if student answer has MORE info if factually accurate
+
+Return: {"correct": True/False, "explanation": "..."}
+"""
+```
+
+---
+
+##### 📌 **Métrica 2: Relevancia (Relevance)**
+
+**¿Qué mide?**: Si la respuesta aborda la pregunta del usuario
+
+**Requiere**: Solo pregunta + respuesta (no necesita ground truth)
+
+**Cuándo usar:**
+```python
+✅ No tienes respuestas de referencia
+✅ Quieres validar que el modelo entiende la pregunta
+✅ Detectar respuestas evasivas o fuera de tema
+✅ Evaluación continua en producción
+```
+
+**Ejemplo:**
+```python
+def relevance(inputs, outputs):
+    """¿La respuesta es relevante para la pregunta?"""
+    prompt = f"""
+    QUESTION: {inputs['question']}
+    ANSWER: {outputs['answer']}
+
+    Is the answer relevant and helpful?
+    """
+    return llm_judge.invoke(prompt)
+```
+
+---
+
+##### 📌 **Métrica 3: Fundamentación (Groundedness)**
+
+**¿Qué mide?**: Si la respuesta está basada en los documentos recuperados (detecta alucinaciones)
+
+**Requiere**: Documentos recuperados + respuesta
+
+**Cuándo usar:**
+```python
+✅ Detectar alucinaciones del LLM
+✅ Asegurar que respuestas provienen de tus documentos
+✅ Sistemas donde precisión factual es crítica (legal, médico)
+✅ Evaluar calidad del prompting
+```
+
+**Cómo funciona:**
+```python
+def groundedness(inputs, outputs):
+    """¿La respuesta está fundamentada en los docs recuperados?"""
+    docs = outputs["documents"]
+    answer = outputs["answer"]
+
+    prompt = f"""
+    FACTS (from retrieved documents): {docs}
+    STUDENT ANSWER: {answer}
+
+    Is the answer grounded in the facts?
+    Or does it hallucinate information?
+    """
+    return llm_judge.invoke(prompt)
+```
+
+**Ejemplo de evaluación:**
+- ✅ **Grounded**: "Los agentes ReAct integran razonamiento y acción" (presente en docs)
+- ❌ **Hallucinated**: "Los agentes ReAct fueron inventados en 2025" (NO en docs)
+
+---
+
+##### 📌 **Métrica 4: Relevancia de Recuperación (Retrieval Relevance)**
+
+**¿Qué mide?**: Si los documentos recuperados son relevantes para la pregunta
+
+**Requiere**: Pregunta + documentos recuperados
+
+**Cuándo usar:**
+```python
+✅ Diagnosticar problemas del retriever
+✅ Optimizar estrategias de búsqueda (híbrida, reranking, MMR)
+✅ Ajustar parámetros de chunk size y overlap
+✅ Evaluar calidad de embeddings
+```
+
+**Cómo funciona:**
+```python
+def retrieval_relevance(inputs, outputs):
+    """¿Los documentos recuperados son relevantes?"""
+    question = inputs["question"]
+    docs = outputs["documents"]
+
+    prompt = f"""
+    QUESTION: {question}
+    RETRIEVED DOCUMENTS: {docs}
+
+    Are the retrieved documents relevant to answer the question?
+    """
+    return llm_judge.invoke(prompt)
+```
+
+**Utilidad**: Si esta métrica es baja, el problema está en el **retriever**, no en el LLM.
+
+---
+
+### 🧪 LLM-as-Judge: Evaluadores con Salida Estructurada
+
+En lugar de respuestas de texto libre, usamos **salida estructurada** con TypedDict/Pydantic para evaluaciones consistentes:
+
+```python
+from typing_extensions import Annotated, TypedDict
+from langchain_openai import ChatOpenAI
+
+# Definir esquema de salida
+class CorrectnessGrade(TypedDict):
+    explanation: Annotated[str, ..., "Reasoning for the score"]
+    correct: Annotated[bool, ..., "True if correct, False otherwise"]
+
+# Crear LLM evaluador con salida estructurada
+grader_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0).with_structured_output(
+    CorrectnessGrade,
+    method="json_schema",
+    strict=True
+)
+
+# Usar evaluador
+grade = grader_llm.invoke([
+    {"role": "system", "content": instructions},
+    {"role": "user", "content": content}
+])
+
+# grade = {"explanation": "...", "correct": True}
+```
+
+**Ventajas de salida estructurada:**
+- ✅ **Consistente**: Siempre retorna el mismo formato
+- ✅ **Parseable**: Fácil de procesar automáticamente
+- ✅ **Razonable**: `explanation` antes de `correct` → obliga al LLM a pensar
+- ✅ **Validable**: TypeChecking automático
+
+### 📊 Integración con LangSmith
+
+**LangSmith** es la plataforma de observabilidad de LangChain que permite:
+
+#### **Funcionalidades:**
+- 📁 **Datasets versionados**: Guarda casos de prueba reutilizables
+- 🔄 **Experimentos comparativos**: Compara diferentes modelos/configuraciones
+- 📈 **Métricas agregadas**: Visualiza rendimiento en dashboard
+- 🔍 **Trazas detalladas**: Inspecciona cada paso del RAG
+- 🏷️ **Tagging y filtros**: Organiza experimentos por versión/feature
+
+#### **Flujo de trabajo:**
+
+```python
+from langsmith import Client
+
+client = Client()
+
+# 1. Crear dataset
+dataset = client.create_dataset("RAG Evaluation Dataset")
+client.create_examples(
+    dataset_id=dataset.id,
+    examples=[
+        {
+            "inputs": {"question": "How does ReAct work?"},
+            "outputs": {"answer": "ReAct integrates reasoning and acting..."}
+        },
+        # ... más casos
+    ]
+)
+
+# 2. Definir función objetivo
+@traceable()  # Rastrea automáticamente en LangSmith
+def rag_bot(question):
+    docs = retriever.invoke(question)
+    answer = llm.invoke([
+        {"role": "system", "content": f"Use these docs: {docs}"},
+        {"role": "user", "content": question}
+    ])
+    return {"answer": answer, "documents": docs}
+
+# 3. Ejecutar evaluación
+results = client.evaluate(
+    lambda inputs: rag_bot(inputs["question"]),
+    data="RAG Evaluation Dataset",
+    evaluators=[correctness, groundedness, relevance, retrieval_relevance],
+    experiment_prefix="rag-v1",
+    metadata={"model": "gpt-4o-mini", "chunk_size": 250}
+)
+
+# 4. Ver resultados
+results.to_pandas()  # Localmente
+# O en: https://smith.langchain.com/datasets/...
+```
+
+### 🔬 Comparación de Experimentos
+
+Uno de los mayores beneficios de LangSmith es **comparar experimentos**:
+
+```python
+# Experimento 1: GPT-4o-mini
+results_mini = client.evaluate(
+    rag_bot_mini,
+    data=dataset,
+    evaluators=[...],
+    experiment_prefix="gpt-4o-mini"
+)
+
+# Experimento 2: GPT-4-turbo
+results_turbo = client.evaluate(
+    rag_bot_turbo,
+    data=dataset,
+    evaluators=[...],
+    experiment_prefix="gpt-4-turbo"
+)
+
+# LangSmith muestra ambos lado a lado con métricas comparativas
+```
+
+**Métricas comparables:**
+- Accuracy promedio (% de respuestas correctas)
+- Latencia (tiempo de respuesta)
+- Costo (llamadas a API)
+- Tasa de alucinaciones
+- Relevancia de recuperación
+
+### 💡 Casos de Uso
+
+#### ✅ **Usa Evaluación RAG cuando**:
+- 🔧 **Optimizas configuraciones**: Comparar chunk sizes, modelos, embeddings
+- 🐛 **Debuggeas problemas**: Identificar si falla retriever o generación
+- 📈 **Mides progreso**: Validar que mejoras realmente funcionan
+- 🚀 **Pre-producción**: Asegurar calidad antes de deploy
+- 📊 **Reportes a stakeholders**: Métricas objetivas de rendimiento
+
+**Ejemplos:**
+- 🧪 **A/B Testing**: ¿GPT-4 vs GPT-3.5-turbo para mi caso de uso?
+- 🔍 **Optimización de retriever**: ¿Dense, Sparse o Híbrido?
+- 📏 **Chunk size**: ¿250, 500 o 1000 tokens dan mejores respuestas?
+- 🎯 **Reranking**: ¿Mejora realmente la precisión?
+
+#### ❌ **No uses evaluación cuando**:
+- ⚡ **Iteración muy rápida**: Prototipado inicial sin datos
+- 💰 **Presupuesto limitado**: Evaluadores LLM tienen costo
+- 🕐 **Sin tiempo para datasets**: Crear ground truth lleva tiempo
+
+### 🎯 Mejores Prácticas
+
+#### **1. Diseño de Dataset**
+```python
+✅ Incluye casos edge (preguntas ambiguas, sin respuesta)
+✅ Balancea dificultades (fáciles, medias, difíciles)
+✅ Cubre todos los temas de tus documentos
+✅ Mínimo 10-20 ejemplos por evaluación inicial
+❌ No uses solo preguntas triviales
+❌ No dupliques ejemplos muy similares
+```
+
+#### **2. Selección de Evaluadores**
+```python
+# Evaluación básica (sin ground truth)
+evaluators = [relevance, groundedness, retrieval_relevance]
+
+# Evaluación completa (con ground truth)
+evaluators = [correctness, relevance, groundedness, retrieval_relevance]
+
+# Evaluación de retriever solo
+evaluators = [retrieval_relevance]
+```
+
+#### **3. Modelos para LLM-as-judge**
+```python
+# Evaluaciones críticas
+judge_model = "gpt-4o"  # Más preciso
+
+# Evaluaciones estándar
+judge_model = "gpt-4o-mini"  # Balance costo/calidad
+
+# Evitar
+judge_model = "gpt-3.5-turbo"  # Menos confiable para juicios
+```
+
+#### **4. Interpretación de Resultados**
+
+| Métrica | Puntaje | Diagnóstico | Acción |
+|---------|---------|-------------|--------|
+| **Correctness** | <60% | Respuestas incorrectas | Revisar prompts, mejorar retriever |
+| **Relevance** | <70% | Respuestas fuera de tema | Ajustar instrucciones del sistema |
+| **Groundedness** | <80% | Alucinaciones frecuentes | Prompt más estricto: "Only use provided docs" |
+| **Retrieval Relevance** | <70% | Documentos irrelevantes | Cambiar estrategia de búsqueda, chunk size |
+
+### 🚀 Comparación: Sin Evaluación vs Con Evaluación
+
+| Característica | Sin Evaluación | Con Evaluación |
+|----------------|----------------|----------------|
+| **Confianza en cambios** | ❌ "Parece mejor" | ✅ Métricas objetivas |
+| **Debugging** | ❌ Trial & error | ✅ Identifica componente problemático |
+| **Comparación de modelos** | ❌ Subjetivo | ✅ Datos cuantitativos |
+| **Reportes** | ❌ "Funciona bien" | ✅ Dashboards con KPIs |
+| **Tiempo de setup** | ✅ 0 horas | ⚠️ 2-4 horas (crear dataset) |
+| **Costo** | ✅ Gratis | 💰 ~$0.50-2/evaluación |
+| **Mejor para** | Prototipos rápidos | Desarrollo serio, producción |
+
+### 📚 Recursos Adicionales
+
+- 📖 **LangSmith Docs**: [https://docs.smith.langchain.com](https://docs.smith.langchain.com)
+- 🎓 **Tutorial oficial**: [RAG Evaluation Guide](https://docs.smith.langchain.com/evaluation)
+- 📊 **Ejemplo de dashboard**: Ver resultados en el notebook
+
+---
+
 ## 📁 Estructura del Proyecto
 
 ```
@@ -4414,6 +4841,9 @@ RAGBootcamp/
 │
 ├── 016_CacheRagLangGraph/           # Módulo 17: Cache-Augmented Generation (CAG)
 │   └── 1-cache_augment_generation.ipynb  # Sistema de caché semántico con FAISS para optimizar respuestas
+│
+├── 017_RagEvaluation/               # Módulo 18: Evaluación de Sistemas RAG
+│   └── 1-rag_evaluation.ipynb       # Evaluación completa con LangSmith: métricas, datasets y LLM-as-judge
 │
 ├── .env                             # Variables de entorno (API keys)
 ├── .gitignore                       # Archivos ignorados por Git
@@ -4590,6 +5020,22 @@ RAGBootcamp/
    - Integra metadatos (respuesta, timestamp) en documentos cacheados
    - Domina el patrón CAG para sistemas RAG optimizados en producción
    - Comprende cuándo usar caché exacto vs caché semántico según el caso de uso
+
+18. **Módulo 017: Evaluación de Sistemas RAG** (4-6 horas)
+   - **Evaluación de Chatbots**: Aprende métricas básicas (corrección, concisión) sin RAG
+   - **Datasets con LangSmith**: Crea datasets reutilizables con ejemplos y respuestas esperadas
+   - **LLM-as-Judge**: Usa LLMs como evaluadores objetivos de calidad
+   - **4 Métricas Clave de RAG**: Corrección, Relevancia, Fundamentación y Relevancia de Recuperación
+   - **Salida Estructurada con TypedDict**: Implementa evaluadores consistentes con esquemas Pydantic
+   - **Detección de Alucinaciones**: Verifica que respuestas estén basadas en documentos recuperados
+   - **Evaluación de Retriever**: Mide si los documentos recuperados son relevantes
+   - **Experimentos Comparativos**: Compara diferentes modelos (GPT-4o-mini vs GPT-4-turbo)
+   - Implementa evaluadores personalizados con prompts específicos
+   - Usa `client.evaluate()` para ejecutar evaluaciones automáticas
+   - Aprende a interpretar métricas y diagnosticar problemas (retriever vs generación)
+   - Visualiza resultados en dashboards de LangSmith
+   - Domina el framework completo de evaluación para sistemas RAG en producción
+   - Aprende cuándo usar cada métrica y cómo combinarlas efectivamente
 
 ### Ejecutar un Notebook
 
